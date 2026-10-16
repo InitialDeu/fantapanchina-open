@@ -142,3 +142,9 @@ le pagine di un sito controlla che i suoi termini d'uso lo consentano.
 L'app non ha un server suo e non raccoglie dati. Contatta solo TheSportsDB per il calendario, il
 provider IA che scegli tu (con i dati della rosa necessari alla richiesta) ed eventuali fonti che
 aggiungi. Niente backup su cloud, niente traffico in chiaro.
+
+## Licenza
+
+[MIT](LICENSE): puoi usare, modificare e ridistribuire il codice, anche in app tue, mantenendo
+l'avviso di copyright. Nessuna garanzia: i consigli dell'assistente e i dati delle fonti possono
+essere sbagliati.
