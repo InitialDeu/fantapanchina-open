@@ -1,0 +1,117 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:fillViewport="true">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:paddingStart="16dp"
+        android:paddingEnd="16dp"
+        android:paddingTop="18dp"
+        android:paddingBottom="40dp">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/app_name"
+            android:textSize="30sp"
+            android:textStyle="bold"
+            android:letterSpacing="0.01" />
+
+        <Spinner
+            android:id="@+id/scelta"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="10dp" />
+
+        <TextView
+            android:id="@+id/note"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:textSize="13sp"
+            android:textColor="@color/tenue" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:layout_marginTop="16dp"
+            android:padding="14dp"
+            android:background="@drawable/scheda">
+
+            <TextView
+                android:id="@+id/testo_deadline"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:textSize="14sp" />
+
+            <Button
+                android:id="@+id/bottone_aggiorna"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="10dp"
+                android:text="@string/aggiorna" />
+
+            <Button
+                android:id="@+id/bottone_schierata"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/ho_schierato" />
+
+            <Button
+                android:id="@+id/bottone_report"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/report_giornate" />
+
+            <Button
+                android:id="@+id/bottone_claude"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/collega_claude" />
+
+            <Button
+                android:id="@+id/bottone_leghe"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/gestisci_leghe" />
+
+            <TextView
+                android:id="@+id/avviso_esatti"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:padding="8dp"
+                android:text="@string/avviso_esatti"
+                android:textSize="13sp"
+                android:textColor="@color/dubbio"
+                android:visibility="gone" />
+        </LinearLayout>
+
+        <TextView
+            android:id="@+id/testo_fonti"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="10dp"
+            android:textSize="12sp"
+            android:textColor="@color/tenue" />
+
+        <LinearLayout
+            android:id="@+id/contenitore"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="22dp"
+            android:text="@string/aiuto"
+            android:textSize="12sp"
+            android:textColor="@color/tenue" />
+    </LinearLayout>
+</ScrollView>

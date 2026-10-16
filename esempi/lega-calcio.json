@@ -1,0 +1,38 @@
+{
+  "formato": "fantapanchina-lega",
+  "versione": 1,
+  "lega": {
+    "id": "esempio-calcio",
+    "nome": "Lega di esempio",
+    "sport": "Calcio",
+    "note": "500 crediti · modificatore difesa",
+    "calendario": "4332",
+    "moduli": ["4-4-2", "4-3-3", "3-5-2"],
+    "reparti": [
+      { "nome": "Portieri", "giocatori": [
+        { "nome": "Portiere A", "crediti": 20 },
+        { "nome": "Portiere B", "crediti": 5 }
+      ] },
+      { "nome": "Difensori", "giocatori": [
+        { "nome": "Difensore A", "crediti": 30 },
+        { "nome": "Difensore B", "crediti": 22 },
+        { "nome": "Difensore C", "crediti": 15 },
+        { "nome": "Difensore D", "crediti": 10 },
+        { "nome": "Difensore E", "crediti": 3 }
+      ] },
+      { "nome": "Centrocampisti", "giocatori": [
+        { "nome": "Centrocampista A", "crediti": 40 },
+        { "nome": "Centrocampista B", "crediti": 25 },
+        { "nome": "Centrocampista C", "crediti": 18 },
+        { "nome": "Centrocampista D", "crediti": 9 },
+        { "nome": "Centrocampista E", "crediti": 4 }
+      ] },
+      { "nome": "Attaccanti", "giocatori": [
+        { "nome": "Attaccante A", "crediti": 90 },
+        { "nome": "Attaccante B", "crediti": 45 },
+        { "nome": "Attaccante C", "crediti": 12 },
+        { "nome": "Attaccante D", "crediti": 2 }
+      ] }
+    ]
+  }
+}

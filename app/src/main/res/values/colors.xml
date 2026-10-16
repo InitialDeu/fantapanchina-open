@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="tenue">#7A8273</color>
+    <color name="dentro">#2F7D4F</color>
+    <color name="dubbio">#B07400</color>
+    <color name="fuori">#9A2B2B</color>
+    <color name="icona_sfondo">#7D1128</color>
+</resources>

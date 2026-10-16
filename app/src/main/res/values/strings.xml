@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">FantaPanchina</string>
+    <string name="aggiorna">Aggiorna</string>
+    <string name="ho_schierato">Ho schierato</string>
+    <string name="report_giornate">Report giornate</string>
+    <string name="collega_claude">Collega un assistente</string>
+    <string name="gestisci_leghe">Gestisci leghe</string>
+    <string name="avviso_esatti">Gli avvisi precisi sono disattivati per questa app. Tocca qui per concederli, altrimenti le notifiche possono arrivare in ritardo.</string>
+    <string name="aiuto">Le leghe si creano a mano o si importano da file in Gestisci leghe. Il calendario viene da TheSportsDB e la deadline è il primo fischio d\'inizio della giornata. Dove c\'è una fonte dati, stato e percentuali vengono dalle probabili formazioni e i titolari più probabili stanno in alto. L\'app si aggiorna da sola ogni 6 ore.</string>
+</resources>
