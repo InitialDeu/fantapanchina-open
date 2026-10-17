@@ -442,6 +442,11 @@ object Assistente {
         }.getOrNull()
     }
 
+    /** Toglie un consiglio (dopo una segnalazione): torna la formazione calcolata dall'app. */
+    fun eliminaConsiglio(ctx: Context, lega: Lega, giornata: Int) {
+        p(ctx).edit().remove("cons_${lega.id}_$giornata").apply()
+    }
+
     fun salvaConsiglio(ctx: Context, lega: Lega, c: Consiglio) {
         val m = JSONObject().apply { c.motivi.forEach { (id, t) -> put(id.toString(), t) } }
         val o = JSONObject().put("modulo", c.schierata.modulo)

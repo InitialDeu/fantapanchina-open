@@ -90,6 +90,7 @@ class MainActivity : AppCompatActivity() {
             startActivity(Intent(this, LegheActivity::class.java))
         }
         bottoneAssistente.setOnClickListener { impostazioniAssistente { disegna() } }
+        findViewById<Button>(R.id.bottone_info).setOnClickListener { informazioni() }
         bottoneSchierata.setOnClickListener {
             val l = lega ?: return@setOnClickListener
             val giornata = Promemoria.prossima(this, l) ?: return@setOnClickListener
@@ -314,6 +315,12 @@ class MainActivity : AppCompatActivity() {
                 textSize = 13f
                 setPadding(0, dp(4), 0, 0)
             })
+            scheda.addView(TextView(this).apply {
+                text = "Generata dall'IA: può contenere errori, controlla prima di schierare."
+                textSize = 12f
+                setTextColor(ContextCompat.getColor(context, R.color.tenue))
+                setPadding(0, dp(4), 0, 0)
+            })
         } else if (giornataProbabili != null && daSchierare != null && daSchierare != giornataProbabili) {
             scheda.addView(TextView(this).apply {
                 text = "Le probabili della giornata $daSchierare non sono ancora uscite: questa è " +
@@ -345,6 +352,21 @@ class MainActivity : AppCompatActivity() {
                 text = "Nessuna formazione ancora: chiedila all'assistente."
                 textSize = 13f
                 setPadding(0, dp(4), 0, 0)
+            })
+        }
+        if (consiglio != null && s != null) {
+            scheda.addView(Button(this).apply {
+                text = "Segnala questa formazione"
+                setOnClickListener {
+                    val contenuto = Formazioni.testo(l, s) + "\n\n" + consiglio.spiegazione + "\n\n" +
+                        consiglio.motivi.entries.joinToString("\n") { (k, m) ->
+                            "${l.giocatori.firstOrNull { it.chiave == k }?.nome ?: k}: $m"
+                        }
+                    segnalaContenutoIa("formazione", contenuto) {
+                        Assistente.eliminaConsiglio(this@MainActivity, l, consiglio.giornata)
+                        disegna()
+                    }
+                }
             })
         }
         if (l.moduli.isNotEmpty()) {

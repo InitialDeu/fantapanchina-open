@@ -115,6 +115,16 @@ class ReportActivity : AppCompatActivity() {
                     setTextIsSelectable(true)
                     setPadding(0, dp(6), 0, 0)
                 })
+                addView(tenue("Generato dall'IA: può contenere errori.", 12f).apply { setPadding(0, dp(6), 0, 0) })
+                addView(Button(context).apply {
+                    text = "Segnala questo commento"
+                    setOnClickListener {
+                        segnalaContenutoIa("commento", commento) {
+                            Report.rimuoviCommento(this@ReportActivity, giornata)
+                            mostra(giornata)
+                        }
+                    }
+                })
             })
         }
 

@@ -113,5 +113,13 @@
             android:text="@string/aiuto"
             android:textSize="12sp"
             android:textColor="@color/tenue" />
+
+        <Button
+            android:id="@+id/bottone_info"
+            style="?android:attr/borderlessButtonStyle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="@string/informazioni" />
     </LinearLayout>
 </ScrollView>

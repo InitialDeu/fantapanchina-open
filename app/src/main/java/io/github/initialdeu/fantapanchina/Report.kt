@@ -162,6 +162,14 @@ object Report {
             .mapNotNull { Regex("""g(\d+)\.json""").matchEntire(it.name)?.groupValues?.get(1)?.toInt() }
             .sortedDescending()
 
+    /** Toglie il commento dell'assistente da un report (dopo una segnalazione). */
+    fun rimuoviCommento(ctx: Context, giornata: Int) {
+        val r = leggi(ctx, giornata) ?: return
+        r.remove("commento")
+        r.remove("autore_commento")
+        file(ctx, giornata).writeText(r.toString())
+    }
+
     fun leggi(ctx: Context, giornata: Int): JSONObject? =
         runCatching { JSONObject(file(ctx, giornata).readText()) }.getOrNull()
 

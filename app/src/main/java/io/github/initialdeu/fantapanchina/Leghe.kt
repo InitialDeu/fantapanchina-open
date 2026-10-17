@@ -38,6 +38,11 @@ object Leghe {
 
     fun perId(ctx: Context, id: String): Lega? = tutte(ctx).firstOrNull { it.id == id }
 
+    /** Dimentica le leghe in memoria (dopo "Cancella tutti i dati"). */
+    fun dimentica() {
+        cache = null
+    }
+
     private fun salvaTutte(ctx: Context, leghe: List<Lega>) {
         val o = JSONObject().put("formato", FORMATO).put("versione", 1)
             .put("leghe", JSONArray().apply { leghe.forEach { put(json(it)) } })

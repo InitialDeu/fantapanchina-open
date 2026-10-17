@@ -47,7 +47,7 @@ object Rete {
      * periodo ("Free API temporarily disabled"): se una non risponde si passa alla successiva.
      * La "3" dà al massimo 5 partite per giornata, che bastano per il primo fischio.
      */
-    private val CHIAVI_SPORTSDB = listOf("123", "3")
+    private val CHIAVI_SPORTSDB = listOf(BuildConfig.THESPORTSDB_KEY, "123", "3").filter { it.isNotBlank() }.distinct()
     private const val AGENTE =
         "Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126 Mobile Safari/537.36"
 

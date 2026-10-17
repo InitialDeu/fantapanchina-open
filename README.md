@@ -24,6 +24,15 @@ né fonti dati legate a siti specifici; il calendario viene da un'API pubblica.
   per reparto) prima di essere mostrata.
 - **Report di fine giornata** con storico, per le leghe che hanno una fonte di voti.
 - Funziona offline con gli ultimi dati scaricati e si aggiorna da solo ogni 6 ore.
+- **Segnalazione dei contenuti IA** con un tocco, e **cancellazione di tutti i dati** da
+  Informazioni e privacy.
+
+## Google Play
+
+L'app è pronta per Google Play: target Android 16, build AAB nel workflow, privacy policy
+([`PRIVACY.md`](PRIVACY.md)), segnalazione dei contenuti IA dall'app, cancellazione dei dati,
+icona e grafica per la scheda in [`play/`](play). Tutti i passaggi, con i testi della scheda e le
+risposte ai moduli di Play Console, sono in [`GOOGLE_PLAY.md`](GOOGLE_PLAY.md).
 
 ## Compilare senza installare niente
 

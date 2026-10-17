@@ -10,6 +10,13 @@ val numeroBuild = System.getenv("GITHUB_RUN_NUMBER")?.toIntOrNull() ?: 0
 // La chiave di firma arriva dai secret del repo. Sempre la stessa chiave = aggiornamenti possibili.
 val chiave = System.getenv("KEYSTORE_FILE")?.let { file(it) }?.takeIf { it.exists() }
 
+/**
+ * Impostazioni di chi pubblica l'app, lette da variabili d'ambiente (su GitHub: variabili e secret
+ * del repo) o da gradle.properties. Vuote = funzione spenta. Finiscono in BuildConfig.
+ */
+fun impostazione(nome: String): String =
+    (System.getenv(nome) ?: (project.findProperty(nome) as String?) ?: "").replace("\"", "")
+
 android {
     namespace = "io.github.initialdeu.fantapanchina"
     compileSdk = 36
@@ -20,13 +27,26 @@ android {
         targetSdk = 36
         versionCode = 100 + numeroBuild
         versionName = "3.1.$numeroBuild"
+
+        // Indirizzo della privacy policy, mostrato in Informazioni e richiesto da Google Play.
+        buildConfigField("String", "PRIVACY_URL", "\"${impostazione("PRIVACY_URL")}\"")
+        // Email di contatto per segnalazioni e domande.
+        buildConfigField("String", "CONTATTO_EMAIL", "\"${impostazione("CONTATTO_EMAIL")}\"")
+        // Dove mandare le segnalazioni dei contenuti IA (POST JSON). Vuoto = via email, se c'è.
+        buildConfigField("String", "SEGNALAZIONI_URL", "\"${impostazione("SEGNALAZIONI_URL")}\"")
+        // Chiave TheSportsDB a pagamento; se manca si usano quelle gratuite.
+        buildConfigField("String", "THESPORTSDB_KEY", "\"${impostazione("THESPORTSDB_KEY")}\"")
+    }
+
+    buildFeatures {
+        buildConfig = true
     }
 
     signingConfigs {
         if (chiave != null) {
             create("release") {
                 storeFile = chiave
-                storeType = "pkcs12"
+                storeType = System.getenv("KEYSTORE_TYPE")?.ifBlank { null } ?: "pkcs12"
                 storePassword = System.getenv("KEYSTORE_PASSWORD")
                 keyAlias = System.getenv("KEY_ALIAS")
                 keyPassword = System.getenv("KEY_PASSWORD")
