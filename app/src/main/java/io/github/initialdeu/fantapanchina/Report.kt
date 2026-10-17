@@ -162,6 +162,36 @@ object Report {
             .mapNotNull { Regex("""g(\d+)\.json""").matchEntire(it.name)?.groupValues?.get(1)?.toInt() }
             .sortedDescending()
 
+    /** Fa scrivere (o riscrivere) all'assistente il commento di un report già salvato. */
+    fun commenta(ctx: Context, giornata: Int) {
+        val r = leggi(ctx, giornata) ?: error("Report della giornata $giornata non trovato")
+        r.remove("commento")
+        r.remove("autore_commento")
+        val testo = Assistente.commentoReport(ctx, r)
+        r.put("commento", testo).put("autore_commento", Assistente.nome(ctx))
+        file(ctx, giornata).writeText(r.toString())
+    }
+
+    /**
+     * Commenta i report recenti rimasti senza commento, per esempio quelli fatti prima di collegare
+     * l'assistente. Al massimo due per volta, per non far partire tante richieste insieme.
+     */
+    fun commentaMancanti(ctx: Context): List<String> {
+        if (!Assistente.attivo(ctx)) return emptyList()
+        val errori = mutableListOf<String>()
+        elenco(ctx).take(5)
+            .filter { leggi(ctx, it)?.optString("commento").isNullOrEmpty() }
+            .take(2)
+            .forEach { g ->
+                try {
+                    commenta(ctx, g)
+                } catch (e: Exception) {
+                    errori += "Commento giornata $g: ${e.message}"
+                }
+            }
+        return errori
+    }
+
     /** Toglie il commento dell'assistente da un report (dopo una segnalazione). */
     fun rimuoviCommento(ctx: Context, giornata: Int) {
         val r = leggi(ctx, giornata) ?: return

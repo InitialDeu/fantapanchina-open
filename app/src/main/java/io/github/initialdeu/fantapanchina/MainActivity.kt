@@ -267,8 +267,8 @@ class MainActivity : AppCompatActivity() {
         }
         consigliata?.let { righe += "In grassetto i titolari della formazione da schierare (${it.modulo})." }
         if (fonteCalcio != null && Assistente.attivo(this)) {
-            righe += "${Assistente.nome(this)} sceglie da solo la formazione quando escono le probabili (entro 30 " +
-                "ore dalla deadline) e la ricontrolla nelle ultime 8 ore."
+            righe += "${Assistente.nome(this)} sceglie e commenta da solo la formazione appena escono le probabili " +
+                "della giornata, e la ricontrolla nelle ultime 8 ore prima della deadline."
         }
         voti?.let { righe += "Sotto ogni nome il voto della giornata ${it.giornata} (voto · fantavoto)." }
         cal?.let { righe += "Calendario controllato il ${formatoBreve.format(Date(it.aggiornato))}." }
@@ -309,19 +309,7 @@ class MainActivity : AppCompatActivity() {
             textSize = 17f
             setTypeface(typeface, Typeface.BOLD)
         })
-        if (consiglio != null) {
-            scheda.addView(TextView(this).apply {
-                text = "Scelta il ${formatoBreve.format(Date(consiglio.creato))}. ${consiglio.spiegazione}"
-                textSize = 13f
-                setPadding(0, dp(4), 0, 0)
-            })
-            scheda.addView(TextView(this).apply {
-                text = "Generata dall'IA: può contenere errori, controlla prima di schierare."
-                textSize = 12f
-                setTextColor(ContextCompat.getColor(context, R.color.tenue))
-                setPadding(0, dp(4), 0, 0)
-            })
-        } else if (giornataProbabili != null && daSchierare != null && daSchierare != giornataProbabili) {
+        if (consiglio == null && giornataProbabili != null && daSchierare != null && daSchierare != giornataProbabili) {
             scheda.addView(TextView(this).apply {
                 text = "Le probabili della giornata $daSchierare non sono ancora uscite: questa è " +
                     "basata su quelle della giornata $giornataProbabili. Si aggiorna da sola."
@@ -354,6 +342,43 @@ class MainActivity : AppCompatActivity() {
                 setPadding(0, dp(4), 0, 0)
             })
         }
+
+        // Il commento dell'assistente sulla formazione: perché questi titolari e quali dubbi.
+        if (consiglio != null) {
+            scheda.addView(TextView(this).apply {
+                text = "Il commento di $chi"
+                textSize = 15f
+                setTypeface(typeface, Typeface.BOLD)
+                setPadding(0, dp(12), 0, 0)
+            })
+            scheda.addView(TextView(this).apply {
+                text = consiglio.spiegazione
+                textSize = 14f
+                setLineSpacing(0f, 1.15f)
+                setTextIsSelectable(true)
+                setPadding(0, dp(4), 0, 0)
+            })
+            scheda.addView(TextView(this).apply {
+                text = "Scritto il ${formatoBreve.format(Date(consiglio.creato))}. Il motivo di ogni titolare è " +
+                    "sotto il suo nome. Generato dall'IA: può contenere errori, controlla prima di schierare."
+                textSize = 12f
+                setTextColor(ContextCompat.getColor(context, R.color.tenue))
+                setPadding(0, dp(4), 0, 0)
+            })
+        } else if (Assistente.attivo(this) && Fonti.calcio(l.fonte) != null && daSchierare != null) {
+            scheda.addView(TextView(this).apply {
+                text = if (giornataProbabili == daSchierare) {
+                    "$chi sta per commentare questa formazione: arriva con il prossimo aggiornamento, " +
+                        "oppure chiedila subito qui sotto."
+                } else {
+                    "$chi commenterà la formazione appena escono le probabili della giornata $daSchierare."
+                }
+                textSize = 13f
+                setTextColor(ContextCompat.getColor(context, R.color.tenue))
+                setPadding(0, dp(10), 0, 0)
+            })
+        }
+
         if (consiglio != null && s != null) {
             scheda.addView(Button(this).apply {
                 text = "Segnala questa formazione"
@@ -471,7 +496,18 @@ class MainActivity : AppCompatActivity() {
 
         if (allarme != null) {
             riga.setOnClickListener {
-                runCatching { startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(allarme.link))) }
+                androidx.appcompat.app.AlertDialog.Builder(this)
+                    .setTitle("${gioc.nome}: possibile infortunio")
+                    .setMessage("${allarme.frase}\n\n${allarme.titolo}")
+                    .setPositiveButton("Apri l'articolo") { _, _ ->
+                        runCatching { startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(allarme.link))) }
+                    }
+                    .setNeutralButton("Non è un infortunio") { _, _ ->
+                        Fonti.notizie(l.fonte)?.ignora(this, allarme)
+                        disegna()
+                    }
+                    .setNegativeButton("Chiudi", null)
+                    .show()
             }
         }
 

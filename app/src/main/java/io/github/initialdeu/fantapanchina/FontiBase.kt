@@ -34,6 +34,8 @@ interface FonteNotizie {
     fun aggiorna(ctx: Context, leghe: List<Lega>)
     /** L'avviso più recente ancora valido per quel giocatore, se c'è. */
     fun recente(ctx: Context, giocatore: Giocatore): Allarme?
+    /** L'utente dice che non è un infortunio: l'avviso non va più mostrato. */
+    fun ignora(ctx: Context, allarme: Allarme)
 }
 
 /** Un tipo di lega pronto da scegliere quando se ne crea una: precompila i campi. */

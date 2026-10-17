@@ -458,12 +458,13 @@ object Assistente {
 
     /**
      * Va chiesto in automatico? Solo per le leghe con probabili, e al massimo due volte per
-     * giornata: quando escono le probabili nelle 30 ore prima della deadline, e nelle ultime 8.
+     * giornata: appena escono le probabili della giornata da schierare, e di nuovo nelle ultime 8
+     * ore prima della deadline per tenere conto delle ultime notizie.
      */
     fun daChiedere(ctx: Context, lega: Lega, giornata: Giornata, pr: Probabili?): Boolean {
         if (!attivo(ctx) || pr == null || pr.giornata != giornata.numero) return false
         val manca = giornata.inizio - System.currentTimeMillis()
-        if (manca <= 0 || manca > 30L * 60 * 60 * 1000) return false
+        if (manca <= 0) return false
         val c = consiglio(ctx, lega, giornata.numero) ?: return true
         val ultime8 = giornata.inizio - 8L * 60 * 60 * 1000
         return manca < 8L * 60 * 60 * 1000 && c.creato < ultime8

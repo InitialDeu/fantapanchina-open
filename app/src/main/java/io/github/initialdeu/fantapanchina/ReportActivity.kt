@@ -13,12 +13,14 @@ import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.Spinner
 import android.widget.TextView
+import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import org.json.JSONObject
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import java.util.concurrent.Executors
 
 /** Storico dei report di fine giornata. */
 class ReportActivity : AppCompatActivity() {
@@ -26,6 +28,8 @@ class ReportActivity : AppCompatActivity() {
     private lateinit var contenitore: LinearLayout
     private var giornate: List<Int> = emptyList()
     private var attuale: JSONObject? = null
+    private var commentoInCorso = false
+    private val lavoro = Executors.newSingleThreadExecutor()
 
     private val formatoData = SimpleDateFormat("d MMMM 'alle' HH:mm", Locale.ITALIAN)
 
@@ -83,6 +87,28 @@ class ReportActivity : AppCompatActivity() {
         scelta.setSelection(giornate.indexOf(richiesta).coerceAtLeast(0))
     }
 
+    /** Chiede all'assistente il commento della giornata e ridisegna quando arriva. */
+    private fun commenta(giornata: Int) {
+        if (commentoInCorso) return
+        commentoInCorso = true
+        mostra(giornata)
+        lavoro.execute {
+            val esito = runCatching { Report.commenta(applicationContext, giornata) }
+            runOnUiThread {
+                commentoInCorso = false
+                esito.exceptionOrNull()?.let {
+                    Toast.makeText(this, "${Assistente.nome(this)}: ${it.message}", Toast.LENGTH_LONG).show()
+                }
+                if (!isDestroyed) mostra(giornata)
+            }
+        }
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        lavoro.shutdown()
+    }
+
     private fun mostra(giornata: Int) {
         contenitore.removeAllViews()
         val r = Report.leggi(this, giornata)
@@ -97,17 +123,19 @@ class ReportActivity : AppCompatActivity() {
         contenitore.addView(tenue("$stato · ${formatoData.format(Date(r.getLong("creato")))}", 12f)
             .apply { setPadding(0, dp(4), 0, 0) })
 
-        r.optString("commento").takeIf { it.isNotEmpty() }?.let { commento ->
-            contenitore.addView(LinearLayout(this).apply {
-                orientation = LinearLayout.VERTICAL
-                setPadding(dp(14), dp(12), dp(14), dp(12))
-                background = ContextCompat.getDrawable(context, R.drawable.scheda)
-                layoutParams = LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(14) }
-                addView(TextView(context).apply {
-                    text = "Il commento di " + r.optString("autore_commento").ifEmpty { "Claude" }
-                    textSize = 16f
-                    setTypeface(typeface, Typeface.BOLD)
-                })
+        val commento = r.optString("commento")
+        val chi = Assistente.nome(this)
+        contenitore.addView(LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(dp(14), dp(12), dp(14), dp(12))
+            background = ContextCompat.getDrawable(context, R.drawable.scheda)
+            layoutParams = LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(14) }
+            addView(TextView(context).apply {
+                text = "Il commento di " + (r.optString("autore_commento").ifEmpty { null } ?: chi)
+                textSize = 16f
+                setTypeface(typeface, Typeface.BOLD)
+            })
+            if (commento.isNotEmpty()) {
                 addView(TextView(context).apply {
                     text = commento
                     textSize = 14f
@@ -116,6 +144,25 @@ class ReportActivity : AppCompatActivity() {
                     setPadding(0, dp(6), 0, 0)
                 })
                 addView(tenue("Generato dall'IA: può contenere errori.", 12f).apply { setPadding(0, dp(6), 0, 0) })
+            } else {
+                addView(tenue(
+                    if (Assistente.attivo(context)) "Questa giornata non è ancora stata commentata."
+                    else "Collega un assistente dalla schermata principale per avere il commento della giornata.",
+                    13f
+                ).apply { setPadding(0, dp(6), 0, 0) })
+            }
+            if (Assistente.attivo(context)) {
+                addView(Button(context).apply {
+                    text = when {
+                        commentoInCorso -> "$chi sta scrivendo…"
+                        commento.isEmpty() -> "Fai commentare a $chi"
+                        else -> "Rifai il commento"
+                    }
+                    isEnabled = !commentoInCorso
+                    setOnClickListener { commenta(giornata) }
+                })
+            }
+            if (commento.isNotEmpty()) {
                 addView(Button(context).apply {
                     text = "Segnala questo commento"
                     setOnClickListener {
@@ -125,8 +172,8 @@ class ReportActivity : AppCompatActivity() {
                         }
                     }
                 })
-            })
-        }
+            }
+        })
 
         val leghe = r.getJSONArray("leghe")
         for (i in 0 until leghe.length()) lega(leghe.getJSONObject(i))

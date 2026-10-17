@@ -307,6 +307,9 @@ object Archivio {
             }
         }
 
+        // Report rimasti senza commento (fatti prima di collegare l'assistente).
+        errori += Report.commentaMancanti(ctx)
+
         Fonti.notizie.forEach { n ->
             val sue = leghe.filter { it.fonte == n.id }
             if (sue.isNotEmpty()) {
