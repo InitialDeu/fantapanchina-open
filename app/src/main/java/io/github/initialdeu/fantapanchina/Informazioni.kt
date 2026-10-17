@@ -4,6 +4,7 @@ import android.app.Activity
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
+import android.widget.Button
 import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
@@ -36,6 +37,15 @@ fun Activity.informazioni() {
                 textSize = 14f
                 setTextIsSelectable(true)
             })
+            // Sorgenti e, se ci sono, le informazioni per sostenere il progetto.
+            if (BuildConfig.PROGETTO_URL.isNotBlank()) {
+                addView(Button(context).apply {
+                    text = "Pagina del progetto"
+                    setOnClickListener {
+                        runCatching { startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(BuildConfig.PROGETTO_URL))) }
+                    }
+                })
+            }
         })
     }
     val d = AlertDialog.Builder(this)

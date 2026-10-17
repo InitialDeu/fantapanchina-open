@@ -55,6 +55,7 @@ jobs:
           PRIVACY_URL: ${{ vars.PRIVACY_URL }}
           CONTATTO_EMAIL: ${{ vars.CONTATTO_EMAIL }}
           SEGNALAZIONI_URL: ${{ vars.SEGNALAZIONI_URL }}
+          PROGETTO_URL: ${{ vars.PROGETTO_URL }}
           THESPORTSDB_KEY: ${{ secrets.THESPORTSDB_KEY }}
         run: |
           gradle assembleRelease bundleRelease --no-daemon

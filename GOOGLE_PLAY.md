@@ -34,13 +34,14 @@ In **Settings → Secrets and variables → Actions**:
 | `PRIVACY_URL` | indirizzo della privacy policy, es. il link a `PRIVACY.md` su GitHub |
 | `CONTATTO_EMAIL` | email di contatto mostrata nell'app |
 | `SEGNALAZIONI_URL` | dove arrivano le segnalazioni dei contenuti IA (vedi punto 6) |
+| `PROGETTO_URL` | pagina del progetto (es. il repo, con le info per le donazioni), linkata nell'app |
 | `KEYSTORE_TYPE` | `jks` se la chiave è JKS (vuoto = PKCS12) |
 
 Come creare la chiave è spiegato nel [README](README.md#firma-e-aggiornamenti). Conservala al
 sicuro: con Play App Signing, se la perdi puoi chiederne il ripristino a Google, ma è una procedura
 lenta.
 
-**Privacy policy**: in `PRIVACY.md` sostituisci `CONTATTO_DA_INSERIRE` con la tua email. Google
+**Privacy policy**: se pubblichi una tua versione, in `PRIVACY.md` metti la tua email. Google
 accetta il link alla pagina su GitHub
 (`https://github.com/<utente>/<repo>/blob/main/PRIVACY.md`).
 

@@ -1,7 +1,7 @@
 # Privacy policy di FantaPanchina
 
-> **Per chi pubblica l'app:** prima di usare questa pagina su Google Play sostituisci
-> `CONTATTO_DA_INSERIRE` con la tua email di contatto e aggiorna la data qui sotto.
+> **Se pubblichi una tua versione dell'app** sostituisci l'email di contatto qui in fondo con la
+> tua e aggiorna la data.
 
 Ultimo aggiornamento: ottobre 2026
 
@@ -61,4 +61,4 @@ L'app non è pensata per i minori di 14 anni.
 
 ## Contatti
 
-Per domande su questa informativa o sui tuoi dati: CONTATTO_DA_INSERIRE
+Per domande su questa informativa o sui tuoi dati: initialdeu@gmail.com

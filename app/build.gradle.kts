@@ -34,6 +34,8 @@ android {
         buildConfigField("String", "CONTATTO_EMAIL", "\"${impostazione("CONTATTO_EMAIL")}\"")
         // Dove mandare le segnalazioni dei contenuti IA (POST JSON). Vuoto = via email, se c'è.
         buildConfigField("String", "SEGNALAZIONI_URL", "\"${impostazione("SEGNALAZIONI_URL")}\"")
+        // Pagina del progetto (sorgenti, donazioni), linkata in Informazioni.
+        buildConfigField("String", "PROGETTO_URL", "\"${impostazione("PROGETTO_URL")}\"")
         // Chiave TheSportsDB a pagamento; se manca si usano quelle gratuite.
         buildConfigField("String", "THESPORTSDB_KEY", "\"${impostazione("THESPORTSDB_KEY")}\"")
     }
