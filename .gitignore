@@ -10,3 +10,8 @@ local.properties
 *.jks
 *.keystore
 *.pem
+
+# Pagine salvate dal browser (possono contenere dati personali e sessioni)
+VBTV.html
+*_files/
+pagine-salvate/

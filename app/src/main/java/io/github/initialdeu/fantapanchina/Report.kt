@@ -126,14 +126,17 @@ object Formazioni {
 }
 
 /**
- * Report di fine giornata: per ogni lega di calcio la formazione consigliata dall'app, la migliore
- * possibile e i voti di tutta la rosa. Salvati sul telefono, uno per giornata.
+ * Report di fine giornata, uno per giornata e per sport, salvati sul telefono. Per il calcio: la
+ * formazione consigliata, la migliore possibile e i voti della rosa. Altri sport (volley) li
+ * costruisce la loro fonte dati e li pubblica con [pubblica].
+ *
+ * Ogni report ha una chiave: "g007" per la giornata 7 del calcio, "v001" per la giornata 1 del volley.
  */
 object Report {
 
     private const val PREFS = "report"
     private const val CANALE = "report"
-    const val EXTRA_GIORNATA = "giornata"
+    const val EXTRA_CHIAVE = "report"
 
     /** Dopo quanto dall'ultimo calcio d'inizio si prova il primo report (partita + voti). */
     private const val ATTESA = 4L * 60 * 60 * 1000
@@ -141,12 +144,16 @@ object Report {
     /** Fino a quando si riscarica per avere i voti definitivi. */
     private const val DEFINITIVO = 48L * 60 * 60 * 1000
 
+    private val NOME_FILE = Regex("""([a-z])(\d+)\.json""")
+
     private fun p(ctx: Context) = ctx.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
 
     private fun cartella(ctx: Context) = File(ctx.filesDir, "report").apply { mkdirs() }
 
-    private fun file(ctx: Context, giornata: Int) =
-        File(cartella(ctx), String.format(Locale.ROOT, "g%03d.json", giornata))
+    private fun file(ctx: Context, chiave: String) = File(cartella(ctx), "$chiave.json")
+
+    fun chiaveCalcio(giornata: Int) = String.format(Locale.ROOT, "g%03d", giornata)
+    fun chiaveVolley(giornata: Int) = String.format(Locale.ROOT, "v%03d", giornata)
 
     fun creaCanale(ctx: Context) {
         val nm = ctx.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
@@ -156,20 +163,26 @@ object Report {
         )
     }
 
-    /** Giornate salvate, dalla più recente. */
-    fun elenco(ctx: Context): List<Int> =
+    /** Report salvati, dal più recente. */
+    fun elenco(ctx: Context): List<String> =
         cartella(ctx).listFiles().orEmpty()
-            .mapNotNull { Regex("""g(\d+)\.json""").matchEntire(it.name)?.groupValues?.get(1)?.toInt() }
-            .sortedDescending()
+            .mapNotNull { NOME_FILE.matchEntire(it.name)?.let { m -> m.groupValues[1] + m.groupValues[2] } }
+            .sortedByDescending { leggi(ctx, it)?.optLong("creato") ?: 0L }
+
+    /** "Calcio · giornata 7", "Volley · giornata 1". */
+    fun etichetta(report: JSONObject): String {
+        val sport = report.optString("sport").ifEmpty { "calcio" }.replaceFirstChar { it.titlecase(Locale.ITALIAN) }
+        return "$sport · giornata ${report.optInt("giornata")}"
+    }
 
     /** Fa scrivere (o riscrivere) all'assistente il commento di un report già salvato. */
-    fun commenta(ctx: Context, giornata: Int) {
-        val r = leggi(ctx, giornata) ?: error("Report della giornata $giornata non trovato")
+    fun commenta(ctx: Context, chiave: String) {
+        val r = leggi(ctx, chiave) ?: error("Report non trovato")
         r.remove("commento")
         r.remove("autore_commento")
         val testo = Assistente.commentoReport(ctx, r)
         r.put("commento", testo).put("autore_commento", Assistente.nome(ctx))
-        file(ctx, giornata).writeText(r.toString())
+        file(ctx, chiave).writeText(r.toString())
     }
 
     /**
@@ -179,29 +192,56 @@ object Report {
     fun commentaMancanti(ctx: Context): List<String> {
         if (!Assistente.attivo(ctx)) return emptyList()
         val errori = mutableListOf<String>()
-        elenco(ctx).take(5)
+        elenco(ctx).take(6)
             .filter { leggi(ctx, it)?.optString("commento").isNullOrEmpty() }
             .take(2)
-            .forEach { g ->
+            .forEach { k ->
                 try {
-                    commenta(ctx, g)
+                    commenta(ctx, k)
                 } catch (e: Exception) {
-                    errori += "Commento giornata $g: ${e.message}"
+                    errori += "Commento ${leggi(ctx, k)?.let { etichetta(it) } ?: k}: ${e.message}"
                 }
             }
         return errori
     }
 
     /** Toglie il commento dell'assistente da un report (dopo una segnalazione). */
-    fun rimuoviCommento(ctx: Context, giornata: Int) {
-        val r = leggi(ctx, giornata) ?: return
+    fun rimuoviCommento(ctx: Context, chiave: String) {
+        val r = leggi(ctx, chiave) ?: return
         r.remove("commento")
         r.remove("autore_commento")
-        file(ctx, giornata).writeText(r.toString())
+        file(ctx, chiave).writeText(r.toString())
     }
 
-    fun leggi(ctx: Context, giornata: Int): JSONObject? =
-        runCatching { JSONObject(file(ctx, giornata).readText()) }.getOrNull()
+    fun leggi(ctx: Context, chiave: String): JSONObject? =
+        runCatching { JSONObject(file(ctx, chiave).readText()) }.getOrNull()
+
+    fun esiste(ctx: Context, chiave: String) = file(ctx, chiave).exists()
+
+    /**
+     * Salva un report. Se è nuovo, o se diventa definitivo, chiede il commento all'assistente;
+     * se è nuovo manda la notifica. Restituisce gli errori.
+     */
+    fun pubblica(ctx: Context, chiave: String, report: JSONObject, definitivo: Boolean): List<String> {
+        val errori = mutableListOf<String>()
+        val nuovo = !file(ctx, chiave).exists()
+        val vecchio = leggi(ctx, chiave)
+        val precedente = vecchio?.optString("commento").orEmpty()
+        var commento = precedente
+        var autore = vecchio?.optString("autore_commento").orEmpty()
+        if (Assistente.attivo(ctx) && (nuovo || definitivo || precedente.isEmpty())) {
+            try {
+                commento = Assistente.commentoReport(ctx, report)
+                autore = Assistente.nome(ctx)
+            } catch (e: Exception) {
+                errori += "Commento di ${Assistente.nome(ctx)}: ${e.message}"
+            }
+        }
+        if (commento.isNotEmpty()) report.put("commento", commento).put("autore_commento", autore)
+        file(ctx, chiave).writeText(report.toString())
+        if (nuovo) notifica(ctx, chiave, report)
+        return errori
+    }
 
     /** Si segna le giornate viste nel calendario, per farne il report quando finiscono. */
     fun registra(ctx: Context, cal: Calendario) {
@@ -215,7 +255,7 @@ object Report {
         p(ctx).edit().putString("attese", attese.toString()).apply()
     }
 
-    /** Fa (o rifà) i report delle giornate finite. Restituisce gli errori. */
+    /** Fa (o rifà) i report del calcio per le giornate finite. Restituisce gli errori. */
     fun elabora(ctx: Context, fonte: FonteCalcio): List<String> {
         val errori = mutableListOf<String>()
         val attese = JSONObject(p(ctx).getString("attese", "{}") ?: "{}")
@@ -229,27 +269,9 @@ object Report {
             val giornata = chiave.toInt()
             try {
                 val voti = fonte.voti(info.getString("stagione"), giornata)
-                val nuovo = !file(ctx, giornata).exists()
                 val definitivo = adesso > fine + DEFINITIVO
                 val report = costruisci(ctx, giornata, voti, definitivo, fonte)
-
-                // Il commento dell'assistente: al primo report e di nuovo con i voti definitivi.
-                val vecchio = leggi(ctx, giornata)
-                val precedente = vecchio?.optString("commento").orEmpty()
-                var commento = precedente
-                var autore = vecchio?.optString("autore_commento").orEmpty()
-                if (Assistente.attivo(ctx) && (nuovo || definitivo || precedente.isEmpty())) {
-                    try {
-                        commento = Assistente.commentoReport(ctx, report)
-                        autore = Assistente.nome(ctx)
-                    } catch (e: Exception) {
-                        errori += "Commento di ${Assistente.nome(ctx)}: ${e.message}"
-                    }
-                }
-                if (commento.isNotEmpty()) report.put("commento", commento).put("autore_commento", autore)
-
-                file(ctx, giornata).writeText(report.toString())
-                if (nuovo) notifica(ctx, report)
+                errori += pubblica(ctx, chiaveCalcio(giornata), report, definitivo)
                 if (definitivo) {
                     attese.remove(chiave)
                     fatte += chiave
@@ -311,33 +333,32 @@ object Report {
     fun numero(x: Double): String =
         if (x == Math.floor(x)) x.toInt().toString() else String.format(Locale.ITALIAN, "%.1f", x)
 
-    private fun notifica(ctx: Context, report: JSONObject) {
-        val giornata = report.getInt("giornata")
+    private fun notifica(ctx: Context, chiave: String, report: JSONObject) {
         val leghe = report.getJSONArray("leghe")
         val testo = (0 until leghe.length()).joinToString(" · ") { i ->
             val l = leghe.getJSONObject(i)
             val pt = l.optJSONObject("consigliata") ?: l.optJSONObject("migliore")
             "${l.getString("nome")} ${pt?.let { numero(it.getDouble("punti")) } ?: "-"}"
         }
+        val codice = 1000 + (chiave.hashCode() and 0x00FFFFFF)
         val apri = PendingIntent.getActivity(
-            ctx, 1000 + giornata,
-            Intent(ctx, ReportActivity::class.java).putExtra(EXTRA_GIORNATA, giornata),
+            ctx, codice,
+            Intent(ctx, ReportActivity::class.java).putExtra(EXTRA_CHIAVE, chiave),
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
         val n = NotificationCompat.Builder(ctx, CANALE)
             .setSmallIcon(R.drawable.ic_notifica)
-            .setContentTitle("Giornata $giornata finita: il tuo report")
+            .setContentTitle("${etichetta(report)} finita: il tuo report")
             .setContentText(testo)
             .setStyle(
                 NotificationCompat.BigTextStyle().bigText(
-                    "Formazione consigliata: $testo" +
-                        report.optString("commento").takeIf { it.isNotEmpty() }?.let { "\n\n$it" }.orEmpty()
+                    testo + report.optString("commento").takeIf { it.isNotEmpty() }?.let { "\n\n$it" }.orEmpty()
                 )
             )
             .setAutoCancel(true)
             .setContentIntent(apri)
             .build()
-        Promemoria.mostra(ctx, 1000 + giornata, n)
+        Promemoria.mostra(ctx, codice, n)
     }
 
     /** Versione testo, da condividere o incollare dove vuoi. */
@@ -349,8 +370,9 @@ object Report {
     }
 
     fun testo(report: JSONObject): String {
-        val sb = StringBuilder("FantaPanchina · giornata ${report.getInt("giornata")}")
-        if (!report.optBoolean("definitivo")) sb.append(" (voti provvisori)")
+        val sb = StringBuilder("FantaPanchina · ${etichetta(report)}")
+        if (!report.optBoolean("definitivo")) sb.append(" (dati provvisori)")
+        report.optString("nota").takeIf { it.isNotEmpty() }?.let { sb.append('\n').append(it) }
         sb.append('\n')
         report.optString("commento").takeIf { it.isNotEmpty() }?.let {
             val autore = report.optString("autore_commento").ifEmpty { "Claude" }
@@ -370,9 +392,10 @@ object Report {
             val rosa = l.getJSONArray("rosa")
             for (j in 0 until rosa.length()) {
                 val g = rosa.getJSONObject(j)
-                val voto = when (g.getString("stato")) {
-                    "ne" -> "n.e."
-                    "sv" -> "s.v."
+                val voto = when {
+                    g.getString("stato") == "ne" -> "n.e."
+                    g.getString("stato") == "sv" -> "s.v."
+                    g.has("fpt") -> "${numero(g.getDouble("fpt"))} FPT"
                     else -> "${numero(g.getDouble("voto"))} (fv ${numero(g.getDouble("fv"))})"
                 }
                 val bonus = g.optString("bonus").takeIf { it.isNotEmpty() }?.let { " · $it" } ?: ""

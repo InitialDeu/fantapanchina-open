@@ -36,6 +36,10 @@ interface FonteNotizie {
     fun recente(ctx: Context, giocatore: Giocatore): Allarme?
     /** L'utente dice che non è un infortunio: l'avviso non va più mostrato. */
     fun ignora(ctx: Context, allarme: Allarme)
+    /** La prestazione dell'ultima giornata in una riga, da mostrare sotto il giocatore. */
+    fun statistica(ctx: Context, lega: Lega, giocatore: Giocatore): String? = null
+    /** Dati in più (rendimento recente, regole del gioco) per far scegliere la formazione all'assistente. */
+    fun datiAssistente(ctx: Context, lega: Lega): String? = null
 }
 
 /** Un tipo di lega pronto da scegliere quando se ne crea una: precompila i campi. */

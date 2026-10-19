@@ -26,7 +26,7 @@ import java.util.concurrent.Executors
 class ReportActivity : AppCompatActivity() {
 
     private lateinit var contenitore: LinearLayout
-    private var giornate: List<Int> = emptyList()
+    private var chiavi: List<String> = emptyList()
     private var attuale: JSONObject? = null
     private var commentoInCorso = false
     private val lavoro = Executors.newSingleThreadExecutor()
@@ -49,8 +49,8 @@ class ReportActivity : AppCompatActivity() {
             setTypeface(typeface, Typeface.BOLD)
         })
 
-        giornate = Report.elenco(this)
-        if (giornate.isEmpty()) {
+        chiavi = Report.elenco(this)
+        if (chiavi.isEmpty()) {
             radice.addView(tenue(
                 "Ancora nessun report. Arriva da solo con una notifica qualche ora dopo l'ultima " +
                     "partita della giornata, e resta qui.", 14f
@@ -60,7 +60,8 @@ class ReportActivity : AppCompatActivity() {
 
         val scelta = Spinner(this)
         scelta.adapter = ArrayAdapter(
-            this, android.R.layout.simple_spinner_dropdown_item, giornate.map { "Giornata $it" }
+            this, android.R.layout.simple_spinner_dropdown_item,
+            chiavi.map { k -> Report.leggi(this, k)?.let { Report.etichetta(it) } ?: k }
         )
         radice.addView(scelta)
 
@@ -80,26 +81,26 @@ class ReportActivity : AppCompatActivity() {
         radice.addView(contenitore)
 
         scelta.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
-            override fun onItemSelected(p: AdapterView<*>?, v: View?, pos: Int, id: Long) = mostra(giornate[pos])
+            override fun onItemSelected(p: AdapterView<*>?, v: View?, pos: Int, id: Long) = mostra(chiavi[pos])
             override fun onNothingSelected(p: AdapterView<*>?) {}
         }
-        val richiesta = intent.getIntExtra(Report.EXTRA_GIORNATA, -1)
-        scelta.setSelection(giornate.indexOf(richiesta).coerceAtLeast(0))
+        val richiesta = intent.getStringExtra(Report.EXTRA_CHIAVE)
+        scelta.setSelection(chiavi.indexOf(richiesta).coerceAtLeast(0))
     }
 
     /** Chiede all'assistente il commento della giornata e ridisegna quando arriva. */
-    private fun commenta(giornata: Int) {
+    private fun commenta(chiave: String) {
         if (commentoInCorso) return
         commentoInCorso = true
-        mostra(giornata)
+        mostra(chiave)
         lavoro.execute {
-            val esito = runCatching { Report.commenta(applicationContext, giornata) }
+            val esito = runCatching { Report.commenta(applicationContext, chiave) }
             runOnUiThread {
                 commentoInCorso = false
                 esito.exceptionOrNull()?.let {
                     Toast.makeText(this, "${Assistente.nome(this)}: ${it.message}", Toast.LENGTH_LONG).show()
                 }
-                if (!isDestroyed) mostra(giornata)
+                if (!isDestroyed) mostra(chiave)
             }
         }
     }
@@ -109,17 +110,21 @@ class ReportActivity : AppCompatActivity() {
         lavoro.shutdown()
     }
 
-    private fun mostra(giornata: Int) {
+    private fun mostra(chiave: String) {
         contenitore.removeAllViews()
-        val r = Report.leggi(this, giornata)
+        val r = Report.leggi(this, chiave)
         attuale = r
         if (r == null) {
             contenitore.addView(tenue("Report illeggibile.", 14f))
             return
         }
 
-        val stato = if (r.optBoolean("definitivo")) "Voti definitivi" else
-            "Voti provvisori: il report si aggiorna da solo fino a 48 ore dopo la giornata"
+        val volley = r.optString("sport") == "volley"
+        val stato = when {
+            volley -> "Statistiche ufficiali della Lega Volley"
+            r.optBoolean("definitivo") -> "Voti definitivi"
+            else -> "Voti provvisori: il report si aggiorna da solo fino a 48 ore dopo la giornata"
+        }
         contenitore.addView(tenue("$stato · ${formatoData.format(Date(r.getLong("creato")))}", 12f)
             .apply { setPadding(0, dp(4), 0, 0) })
 
@@ -159,7 +164,7 @@ class ReportActivity : AppCompatActivity() {
                         else -> "Rifai il commento"
                     }
                     isEnabled = !commentoInCorso
-                    setOnClickListener { commenta(giornata) }
+                    setOnClickListener { commenta(chiave) }
                 })
             }
             if (commento.isNotEmpty()) {
@@ -167,8 +172,8 @@ class ReportActivity : AppCompatActivity() {
                     text = "Segnala questo commento"
                     setOnClickListener {
                         segnalaContenutoIa("commento", commento) {
-                            Report.rimuoviCommento(this@ReportActivity, giornata)
-                            mostra(giornata)
+                            Report.rimuoviCommento(this@ReportActivity, chiave)
+                            mostra(chiave)
                         }
                     }
                 })
@@ -179,9 +184,11 @@ class ReportActivity : AppCompatActivity() {
         for (i in 0 until leghe.length()) lega(leghe.getJSONObject(i))
 
         contenitore.addView(tenue(
-            "Fantavoti della fonte dati della lega, senza modificatori di lega. Formazione consigliata " +
-                "= quella che l'app (o l'assistente, se collegato) indicava prima della deadline, con fino a ${Formazioni.MAX_CAMBI} " +
-                "cambi automatici dalla panchina.", 12f
+            r.optString("nota").ifEmpty {
+                "Fantavoti della fonte dati della lega, senza modificatori di lega. Formazione consigliata " +
+                    "= quella che l'app (o l'assistente, se collegato) indicava prima della deadline, con fino a " +
+                    "${Formazioni.MAX_CAMBI} cambi automatici dalla panchina."
+            }, 12f
         ).apply { setPadding(0, dp(22), 0, 0) })
     }
 
@@ -208,6 +215,7 @@ class ReportActivity : AppCompatActivity() {
         if (migliore != null) {
             righe += "Migliore possibile (${migliore.getString("modulo")}): " +
                 "${Report.numero(migliore.getDouble("punti"))} punti"
+            migliore.optString("capitano").takeIf { it.isNotEmpty() }?.let { righe += "Capitano ideale: $it" }
         }
         contenitore.addView(TextView(this).apply {
             text = righe.joinToString("\n")
@@ -267,15 +275,20 @@ class ReportActivity : AppCompatActivity() {
         riga.addView(colonna)
 
         val fv = g.optDouble("fv")
+        val fpt = g.has("fpt")
         riga.addView(TextView(this).apply {
-            text = when (stato) {
-                "ne" -> "non entrato"
-                "sv" -> "s.v."
+            text = when {
+                stato == "ne" -> "non entrato"
+                stato == "sv" -> "s.v."
+                fpt -> "${Report.numero(g.getDouble("fpt"))} FPT"
                 else -> "${Report.numero(g.getDouble("voto"))}  ·  fv ${Report.numero(fv)}"
             }
             textSize = 14f
             setTextColor(ContextCompat.getColor(context, when {
                 stato != "ok" -> R.color.tenue
+                fpt && fv >= 20 -> R.color.dentro
+                fpt && fv < 5 -> R.color.fuori
+                fpt -> R.color.dubbio
                 fv >= 7 -> R.color.dentro
                 fv < 6 -> R.color.fuori
                 else -> R.color.dubbio

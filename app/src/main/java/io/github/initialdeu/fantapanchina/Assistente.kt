@@ -298,7 +298,7 @@ object Assistente {
 
     // ---- Formazione ----
 
-    private fun sistemaFormazione(lega: Lega, conDati: Boolean): String {
+    private fun sistemaFormazione(lega: Lega, conDati: Boolean, conExtra: Boolean): String {
         val calcio = lega.sport.equals("calcio", ignoreCase = true)
         val regole = if (calcio) {
             "un portiere più difensori, centrocampisti e attaccanti esattamente come il modulo scelto"
@@ -311,6 +311,11 @@ object Assistente {
                 "del giocatore (crediti) e l'avversario se lo conosci. Chi è infortunato o squalificato non " +
                 "va titolare. Se le probabili sono di una giornata diversa da quella da schierare, dillo " +
                 "nella spiegazione e ragiona con prudenza."
+        } else if (conExtra) {
+            "Nei dati_fonte trovi il rendimento delle ultime giornate (punteggi e statistiche) e le regole " +
+                "del gioco: pesa la continuità di rendimento, quanto gioca davvero (set giocati) e gli avvisi " +
+                "di infortunio. Se il gioco ha il capitano, indica nella spiegazione chi mettere capitano e " +
+                "perché. Se i dati coprono poche giornate, dillo e ragiona con prudenza."
         } else {
             "Non hai probabili formazioni né voti: ragiona su valore dei giocatori (crediti), ruoli e " +
                 "quello che sai di loro, e dichiara nella spiegazione che è una scelta senza dati aggiornati."
@@ -330,7 +335,10 @@ object Assistente {
 
     private val FORMATO = SimpleDateFormat("EEEE d MMMM 'alle' HH:mm", Locale.ITALIAN)
 
-    fun formazione(ctx: Context, lega: Lega, giornata: Giornata?, pr: Probabili?, voti: Voti?): Consiglio {
+    /** [extra]: dati in più della fonte della lega (vedi [FonteNotizie.datiAssistente]). */
+    fun formazione(
+        ctx: Context, lega: Lega, giornata: Giornata?, pr: Probabili?, voti: Voti?, extra: String? = null
+    ): Consiglio {
         require(lega.moduli.isNotEmpty()) { "La lega non ha moduli: aggiungili in Gestisci leghe" }
         val nomi = lega.giocatori
         val perNome = nomi.associateBy { it.nome }
@@ -373,6 +381,7 @@ object Assistente {
             .put("probabili_aggiornate", pr?.aggiornamento ?: JSONObject.NULL)
             .put("voti_della_giornata", voti?.giornata ?: JSONObject.NULL)
             .put("rosa", rosa)
+        extra?.let { dati.put("dati_fonte", it) }
 
         val schema = mapOf(
             "type" to "object",
@@ -398,7 +407,7 @@ object Assistente {
         )
 
         val chi = nome(ctx)
-        val o = JSONObject(chiedi(ctx, sistemaFormazione(lega, conDati), dati.toString(2), schema))
+        val o = JSONObject(chiedi(ctx, sistemaFormazione(lega, conDati, extra != null), dati.toString(2), schema))
         val modulo = o.getString("modulo")
         val tit = o.getJSONArray("titolari").let { a -> (0 until a.length()).map { a.getJSONObject(it) } }
         val titolari = tit.mapNotNull { perNome[it.getString("nome")] }.distinct()

@@ -157,7 +157,8 @@ class MainActivity : AppCompatActivity() {
                 val c = Assistente.formazione(
                     applicationContext, l, giornata,
                     if (conFonte) Archivio.probabili(applicationContext) else null,
-                    if (conFonte) Archivio.votiPrecedenti(applicationContext) else null
+                    if (conFonte) Archivio.votiPrecedenti(applicationContext) else null,
+                    Fonti.notizie(l.fonte)?.datiAssistente(applicationContext, l)
                 )
                 Assistente.salvaConsiglio(applicationContext, l, c)
                 Promemoria.programmaTutte(applicationContext)
@@ -247,7 +248,8 @@ class MainActivity : AppCompatActivity() {
                     val titolare = consigliata?.titolari?.contains(gioc.chiave) == true
                     val allarme = notizie?.recente(this, gioc)
                     val motivo = consiglio?.motivi?.get(gioc.chiave)
-                    contenitore.addView(riga(l, gioc, prev, voti, titolare, allarme, motivo))
+                    val stat = notizie?.statistica(this, l, gioc)
+                    contenitore.addView(riga(l, gioc, prev, voti, titolare, allarme, motivo, stat))
                 }
         }
     }
@@ -412,7 +414,8 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun riga(
-        l: Lega, gioc: Giocatore, prev: Previsione?, voti: Voti?, titolare: Boolean, allarme: Allarme?, motivo: String?
+        l: Lega, gioc: Giocatore, prev: Previsione?, voti: Voti?, titolare: Boolean, allarme: Allarme?, motivo: String?,
+        stat: String?
     ): View {
         val colore = when {
             allarme != null -> R.color.fuori
@@ -464,7 +467,7 @@ class MainActivity : AppCompatActivity() {
         }
         val notizia = allarme?.let { "Notizia del ${formatoBreve.format(Date(it.data))}: ${it.frase}" }
         val perAssistente = motivo?.let { "${Assistente.nome(this)}: $it" }
-        val dettaglio = listOfNotNull(prev?.squadra, prev?.nota?.takeIf { it.isNotEmpty() }, precedente, notizia, perAssistente)
+        val dettaglio = listOfNotNull(prev?.squadra, prev?.nota?.takeIf { it.isNotEmpty() }, precedente, stat, notizia, perAssistente)
             .joinToString(" · ")
         if (dettaglio.isNotEmpty()) {
             colonna.addView(TextView(this).apply {
