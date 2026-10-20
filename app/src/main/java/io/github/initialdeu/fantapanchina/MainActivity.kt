@@ -360,6 +360,21 @@ class MainActivity : AppCompatActivity() {
                 setTextIsSelectable(true)
                 setPadding(0, dp(4), 0, 0)
             })
+            if (consiglio.mercato.isNotBlank()) {
+                scheda.addView(TextView(this).apply {
+                    text = "Consigli di mercato"
+                    textSize = 15f
+                    setTypeface(typeface, Typeface.BOLD)
+                    setPadding(0, dp(12), 0, 0)
+                })
+                scheda.addView(TextView(this).apply {
+                    text = consiglio.mercato
+                    textSize = 14f
+                    setLineSpacing(0f, 1.15f)
+                    setTextIsSelectable(true)
+                    setPadding(0, dp(4), 0, 0)
+                })
+            }
             scheda.addView(TextView(this).apply {
                 text = "Scritto il ${formatoBreve.format(Date(consiglio.creato))}. Il motivo di ogni titolare è " +
                     "sotto il suo nome. Generato dall'IA: può contenere errori, controlla prima di schierare."
@@ -388,7 +403,7 @@ class MainActivity : AppCompatActivity() {
                     val contenuto = Formazioni.testo(l, s) + "\n\n" + consiglio.spiegazione + "\n\n" +
                         consiglio.motivi.entries.joinToString("\n") { (k, m) ->
                             "${l.giocatori.firstOrNull { it.chiave == k }?.nome ?: k}: $m"
-                        }
+                        } + consiglio.mercato.takeIf { it.isNotBlank() }?.let { "\n\nMercato:\n$it" }.orEmpty()
                     segnalaContenutoIa("formazione", contenuto) {
                         Assistente.eliminaConsiglio(this@MainActivity, l, consiglio.giornata)
                         disegna()

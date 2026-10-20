@@ -37,7 +37,9 @@ data class Consiglio(
     /** Motivo per ogni titolare, per [Giocatore.chiave]. */
     val motivi: Map<Int, String>,
     val giornata: Int,
-    val creato: Long
+    val creato: Long,
+    /** Consigli di mercato (trasferimenti), se il gioco ne prevede. Vuoto = nessuno. */
+    val mercato: String = ""
 )
 
 /** Chi risponde. */
@@ -330,6 +332,13 @@ object Assistente {
 
             $criteri Tieni conto delle note della lega. Scrivi in italiano, motivi brevi (una riga) e
             una spiegazione di 2-4 frasi con i dubbi principali.
+
+            Nel campo mercato: se le regole del gioco nei dati_fonte prevedono trasferimenti, proponi i
+            cambi che convengono (al massimo quanti sono gratuiti), uno per riga nella forma
+            "Fuori X, dentro Y: motivo", scegliendo tra i giocatori fuori rosa che ti passo e rispettando i
+            ruoli. Proponi solo cambi che migliorano davvero la squadra: se non ne vale la pena scrivilo.
+            Ricorda che i crediti dei giocatori fuori rosa vanno controllati nel gioco. Se il gioco non
+            prevede trasferimenti, lascia il campo vuoto.
         """.trimIndent()
     }
 
@@ -386,7 +395,7 @@ object Assistente {
         val schema = mapOf(
             "type" to "object",
             "additionalProperties" to false,
-            "required" to listOf("modulo", "titolari", "panchina", "spiegazione"),
+            "required" to listOf("modulo", "titolari", "panchina", "spiegazione", "mercato"),
             "properties" to mapOf(
                 "modulo" to mapOf("type" to "string", "enum" to lega.moduli),
                 "titolari" to mapOf(
@@ -402,7 +411,8 @@ object Assistente {
                     )
                 ),
                 "panchina" to mapOf("type" to "array", "items" to mapOf("type" to "string", "enum" to nomi.map { it.nome })),
-                "spiegazione" to mapOf("type" to "string")
+                "spiegazione" to mapOf("type" to "string"),
+                "mercato" to mapOf("type" to "string")
             )
         )
 
@@ -429,7 +439,8 @@ object Assistente {
             o.getString("spiegazione"),
             tit.mapNotNull { t -> perNome[t.getString("nome")]?.let { it.chiave to t.getString("motivo") } }.toMap(),
             giornata?.numero ?: 0,
-            System.currentTimeMillis()
+            System.currentTimeMillis(),
+            o.optString("mercato").trim()
         )
     }
 
@@ -446,7 +457,7 @@ object Assistente {
                 Schierata(o.getString("modulo"), ids("t"), ids("p")),
                 o.getString("spiegazione"),
                 m.keys().asSequence().associate { it.toInt() to m.getString(it) },
-                o.getInt("giornata"), o.getLong("creato")
+                o.getInt("giornata"), o.getLong("creato"), o.optString("mercato")
             )
         }.getOrNull()
     }
@@ -461,7 +472,7 @@ object Assistente {
         val o = JSONObject().put("modulo", c.schierata.modulo)
             .put("t", JSONArray(c.schierata.titolari)).put("p", JSONArray(c.schierata.panchina))
             .put("spiegazione", c.spiegazione).put("motivi", m)
-            .put("giornata", c.giornata).put("creato", c.creato)
+            .put("giornata", c.giornata).put("creato", c.creato).put("mercato", c.mercato)
         p(ctx).edit().putString("cons_${lega.id}_${c.giornata}", o.toString()).apply()
     }
 
